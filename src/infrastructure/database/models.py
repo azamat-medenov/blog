@@ -12,21 +12,40 @@ class Base(DeclarativeBase):
     pass
 
 
-association_table = Table(
-    "association_table",
+post_tag = Table(
+    "post_tag",
     Base.metadata,
     Column("post_id", ForeignKey("post.id")),
     Column("tag_id", ForeignKey("tag.id")),
 )
 
 
+class Category(Base):
+    __tablename__ = "category"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(50), unique=True)
+    posts: Mapped[List["Post"]] = relationship(
+        back_populates="category",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+
+
 class Tag(Base):
     __tablename__ = "tag"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
-    name: Mapped[str] = mapped_column(String(40), nullable=False)
+    name: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+        unique=True,
+        index=True
+    )
     posts: Mapped[List["Post"]] = relationship(
-        secondary=association_table, back_populates="tags"
+        secondary=post_tag,
+        back_populates="tags",
+        lazy="selectin"
     )
 
     def __repr__(self):
@@ -37,17 +56,28 @@ class Post(Base):
     __tablename__ = "post"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
+    text: Mapped[str] = mapped_column(nullable=False)
     date_created: Mapped[datetime] = mapped_column(default=datetime.now())
-    author_fk: Mapped[uuid.UUID] = mapped_column(
+    author_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("author.id"), nullable=False, index=True
     )
-    tag: Mapped["Tag"] = relationship(back_populates="posts")
+    category_id: Mapped[id] = mapped_column(
+        ForeignKey("category.id"), nullable=False, index=True
+    )
+    category: Mapped["Category"] = relationship(
+        back_populates="posts",
+        lazy="selectin"
+    )
     author: Mapped["Author"] = relationship(back_populates="posts")
-    medias: Mapped[List["Media"]] = relationship(
-        back_populates="post", cascade="all, delete-orphan"
+    media: Mapped[List["Media"]] = relationship(
+        back_populates="post",
+        cascade="all, delete-orphan",
+        lazy="selectin"
     )
     tags: Mapped[List["Tag"]] = relationship(
-        secondary=association_table, back_populates="posts"
+        secondary=post_tag,
+        back_populates="posts",
+        lazy="selectin"
     )
 
     def __repr__(self) -> str:
@@ -64,7 +94,9 @@ class Author(Base):
     hashed_password: Mapped[str]
 
     posts: Mapped[List['Post']] = relationship(
-        back_populates='author', cascade='all, delete-orphan'
+        back_populates='author',
+        cascade='all, delete-orphan',
+        lazy="selectin"
     )
 
     def __repr__(self) -> str:
@@ -80,6 +112,7 @@ class Media(Base):
     post_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("post.id"), nullable=False, index=True
     )
+    post: Mapped["Post"] = relationship(back_populates='media')
 
     def __repr__(self) -> str:
         return f"<Media: {self.id}>"
