@@ -36,6 +36,13 @@ class PostDTO(CreatePostDTO):
     author_id: uuid.UUID
 
 
+class PostOutDTO(PostDTO):
+    medias: list[uuid.UUID] | None = None
+    tags: list[str] | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PostAuthorDTO(BaseModel):
     author: "AuthorOutDTO"
 

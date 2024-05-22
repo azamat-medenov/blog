@@ -3,11 +3,12 @@ from typing import Type, Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, insert, or_
+from sqlalchemy.orm import selectinload
 
 from src.app.specification import Specification
 from src.app.schemas import (
     AuthorCreateDTO, AuthorDTO, CategoryDTO, CreatePostDTO)
-from src.infrastructure.database.models import Author, Category, Post, Tag
+from src.infrastructure.database.models import Author, Category, Post, Tag, Media
 
 
 class TagRepo:
@@ -28,8 +29,11 @@ class PostRepo:
         self.session = session
         self.model: Type[Post] = Post
 
-    async def get_post(self, post_id: int) -> Post:
-        query = select(self.model).filter_by(id=post_id)
+    async def get_post(self, post_id: uuid.UUID) -> Post:
+        query = (select(self.model).options(
+            selectinload(Post.tags),
+            selectinload(Post.media)).
+                 filter(self.model.id == post_id))
         res = await self.session.execute(query)
         return res.scalar_one()
 
@@ -44,7 +48,6 @@ class PostRepo:
 
     async def add_tags(self, post: Post, tags: list[Tag]):
         await post.tags.extend(tags)
-        await self.session.commit()
 
     async def get_posts_by_category(self, category_id: int):
         query = (select(self.model.id).
@@ -116,5 +119,16 @@ class AuthorRepo:
         query = (select(self.model.hashed_password).
                  filter_by(**specification.is_specified()))
 
+        res = await self.session.execute(query)
+        return res.scalar_one()
+
+
+class MediaRepo:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+        self.model: Type[Media] = Media
+
+    async def get_media(self, media_id: uuid.UUID) -> Media:
+        query = select(self.model).filter_by(id=media_id)
         res = await self.session.execute(query)
         return res.scalar_one()

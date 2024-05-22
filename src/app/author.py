@@ -27,7 +27,7 @@ JWT_EXPIRES = timedelta(minutes=60)
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 
-oauth2_bearer = OAuth2PasswordBearer(tokenUrl="users/login")
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl="authors/login")
 
 
 async def _get_author(repo: AuthorRepo, user_id: uuid.UUID) -> AuthorOutDTO:
