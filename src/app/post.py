@@ -112,3 +112,8 @@ async def _get_media(
     except NoResultFound:
         raise HTTPException(status_code=404, detail="no such media")
     return await s3_get_media(media_id, media.media_type)
+
+
+async def _get_posts_by_tag(repo: PostRepo, tag: str) -> list[uuid.UUID]:
+    res = await repo.get_posts_by_tag(tag)
+    return [obj[0] for obj in res]

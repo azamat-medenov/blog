@@ -5,7 +5,8 @@ from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, UploadFile, File, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.post import _create_category, _get_posts_by_category, create_post_fully, _get_post, _get_media
+from src.app.post import _create_category, _get_posts_by_category, create_post_fully, _get_post, _get_media, \
+    _get_posts_by_tag
 from src.app.schemas import CreatePostDTO, TagDTO, CategoryDTO, PostOutDTO
 from src.app.author import get_current_author
 from src.infrastructure.database.repo import CategoryRepo, PostRepo, MediaRepo
@@ -63,4 +64,15 @@ async def get_posts_by_category(
     return await _get_posts_by_category(
         PostRepo(db_session),
         category_id
+    )
+
+
+@post_router.get("/tag/{tag_name}", status_code=200)
+async def get_posts_by_tag(
+        tag_name: str,
+        db_session: Annotated[AsyncSession, Depends(Stub(AsyncSession))]
+):
+    return await _get_posts_by_tag(
+        PostRepo(db_session),
+        tag_name
     )

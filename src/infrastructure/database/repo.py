@@ -8,7 +8,7 @@ from sqlalchemy.orm import selectinload
 from src.app.specification import Specification
 from src.app.schemas import (
     AuthorCreateDTO, AuthorDTO, CategoryDTO, CreatePostDTO)
-from src.infrastructure.database.models import Author, Category, Post, Tag, Media
+from src.infrastructure.database.models import Author, Category, Post, Tag, Media, post_tag
 
 
 class TagRepo:
@@ -28,6 +28,7 @@ class PostRepo:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.model: Type[Post] = Post
+        self.association_table: Type[post_tag] = post_tag
 
     async def get_post(self, post_id: uuid.UUID) -> Post:
         query = (select(self.model).options(
@@ -46,8 +47,17 @@ class PostRepo:
         res = await self.session.execute(stmt)
         return res.scalar_one()
 
-    async def add_tags(self, post: Post, tags: list[Tag]):
+    @staticmethod
+    async def add_tags(post: Post, tags: list[Tag]):
         await post.tags.extend(tags)
+
+    async def get_posts_by_tag(self, tag: str):
+        query = (select(self.model.id).
+                 join_from(self.model, self.association_table).
+                 join_from(self.association_table, Tag).
+                 filter(Tag.name == tag))
+        res = await self.session.execute(query)
+        return res.all()
 
     async def get_posts_by_category(self, category_id: int):
         query = (select(self.model.id).
